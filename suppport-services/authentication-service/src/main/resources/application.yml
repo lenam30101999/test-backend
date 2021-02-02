@@ -1,0 +1,72 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: authen-service
+  datasource:
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+        current_session_context_class: org.springframework.orm.hibernate5.SpringSessionContext
+        temp.use_jdbc_metadata_defaults: false
+  cache:
+    type: redis
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      time-to-live: 600000
+
+zuul:
+  prefix: /seller
+  sensitiveHeaders: Cookie,Set-Cookie
+  routes:
+    authen-service:
+      service-id: authen-service
+      path: /authen-service/**
+      url: http://localhost:8080/
+    category-composite-service:
+      service-id: category-composite-service
+      path: /category-composite-service/**
+      url: http://localhost:8090/
+    product-composite-service:
+      service-id: product-composite-service
+      path: /product-composite-service/**
+      url: http://localhost:8091/
+    review-composite-service:
+      service-id: review-composite-service
+      path: /review-composite-service/**
+      url: http://localhost:8092/
+  ratelimit:
+    enabled: true
+    repository: JPA
+    policy-list:
+      category-composite-service:
+        - limit: 5
+          refresh-interval: 60
+          type:
+            - origin
+      product-composite-service:
+        - limit: 4
+          refresh-interval: 50
+          type:
+            - origin
+      review-composite-service:
+        - limit: 4
+          refresh-interval: 50
+          type:
+            - origin
+  strip-prefix: true
+
+app:
+  jwtSecret:
+    token: ${JWT_SECRET_TOKEN}
+  jwtExpirationInMs:
+    token: ${JWT_TIME}
